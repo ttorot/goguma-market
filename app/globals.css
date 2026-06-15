@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+/* ===== 고구마마켓 브랜드 색상 ===== */
+:root {
+  --goguma: #FF6B35;
+  --goguma-light: #FFA552;
+  --goguma-dark: #D94F1E;
+}
+
+@theme inline {
+  --color-goguma: var(--goguma);
+  --color-goguma-light: var(--goguma-light);
+  --color-goguma-dark: var(--goguma-dark);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ===== 사계절 테마 ===== */
+
+/* 봄 (Spring) 3~5월: 벚꽃 핑크, 새싹 초록 */
+.season-spring {
+  --s-primary: #f472b6;
+  --s-primary-dark: #db2777;
+  --s-secondary: #86efac;
+  --s-bg: #fdf2f8;
+  --s-bg-card: #fff9fc;
+  --s-text: #831843;
+  --s-text-sub: #be185d;
+  --s-border: #fbcfe8;
+  --s-shadow: rgba(244, 114, 182, 0.25);
+  --s-grad-from: #fce7f3;
+  --s-grad-to: #f0fdf4;
+  --s-badge-bg: #fce7f3;
+  --s-badge-text: #9d174d;
+}
+
+/* 여름 (Summer) 6~8월: 하늘 파랑, 태양 노랑 */
+.season-summer {
+  --s-primary: #0ea5e9;
+  --s-primary-dark: #0284c7;
+  --s-secondary: #fbbf24;
+  --s-bg: #f0f9ff;
+  --s-bg-card: #f8fbff;
+  --s-text: #0c4a6e;
+  --s-text-sub: #0369a1;
+  --s-border: #bae6fd;
+  --s-shadow: rgba(14, 165, 233, 0.25);
+  --s-grad-from: #e0f2fe;
+  --s-grad-to: #fef9c3;
+  --s-badge-bg: #e0f2fe;
+  --s-badge-text: #075985;
+}
+
+/* 가을 (Autumn) 9~11월: 단풍 주황, 황금 갈색 */
+.season-autumn {
+  --s-primary: #f97316;
+  --s-primary-dark: #ea580c;
+  --s-secondary: #eab308;
+  --s-bg: #fff7ed;
+  --s-bg-card: #fffbf5;
+  --s-text: #7c2d12;
+  --s-text-sub: #c2410c;
+  --s-border: #fed7aa;
+  --s-shadow: rgba(249, 115, 22, 0.25);
+  --s-grad-from: #fff7ed;
+  --s-grad-to: #fef3c7;
+  --s-badge-bg: #ffedd5;
+  --s-badge-text: #9a3412;
+}
+
+/* 겨울 (Winter) 12~2월: 눈꽃 보라, 얼음 파랑 */
+.season-winter {
+  --s-primary: #818cf8;
+  --s-primary-dark: #4f46e5;
+  --s-secondary: #94a3b8;
+  --s-bg: #f8fafc;
+  --s-bg-card: #ffffff;
+  --s-text: #1e1b4b;
+  --s-text-sub: #4338ca;
+  --s-border: #e2e8f0;
+  --s-shadow: rgba(129, 140, 248, 0.25);
+  --s-grad-from: #eef2ff;
+  --s-grad-to: #f0f9ff;
+  --s-badge-bg: #eef2ff;
+  --s-badge-text: #3730a3;
+}
+
+/* ===== 기본 스타일 ===== */
+body {
+  background-color: var(--s-bg, #fff7ed);
+  color: var(--s-text, #7c2d12);
+  font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', Arial, sans-serif;
+  transition: background-color 0.3s ease;
+}
+
+/* ===== 시즌 공통 유틸리티 ===== */
+.btn-primary {
+  background-color: var(--s-primary);
+  color: white;
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px var(--s-shadow);
+}
+.btn-primary:hover {
+  background-color: var(--s-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--s-shadow);
+}
+.btn-primary:active { transform: translateY(0); }
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--s-primary);
+  box-shadow: 0 0 0 3px var(--s-shadow);
+}
+
+.card {
+  background-color: var(--s-bg-card);
+  border: 1px solid var(--s-border);
+  box-shadow: 0 4px 16px var(--s-shadow);
+}
+
+.season-gradient {
+  background: linear-gradient(135deg, var(--s-grad-from), var(--s-grad-to));
+}
+
+.season-badge {
+  background-color: var(--s-badge-bg);
+  color: var(--s-badge-text);
+}
+
+.link-primary {
+  color: var(--s-primary-dark);
+  transition: color 0.2s;
+}
+.link-primary:hover {
+  color: var(--s-text-sub);
+  text-decoration: underline;
+}
