@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { logout } from '@/app/actions/auth'
 import type { SeasonInfo } from '@/lib/season'
+import Avatar from '@/components/Avatar'
 
 interface HeaderProps {
   seasonInfo: SeasonInfo
@@ -11,7 +12,11 @@ export default async function Header({ seasonInfo }: HeaderProps) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const nickname = user?.user_metadata?.nickname ?? user?.email?.split('@')[0] ?? '사용자'
+  const { data: profile } = user
+    ? await supabase.from('profiles').select('nickname, avatar_url').eq('id', user.id).single()
+    : { data: null }
+
+  const nickname = profile?.nickname ?? user?.user_metadata?.nickname ?? user?.email?.split('@')[0] ?? '사용자'
 
   return (
     <header className="sticky top-0 z-50 backdrop-blur-sm border-b"
@@ -25,7 +30,7 @@ export default async function Header({ seasonInfo }: HeaderProps) {
         </Link>
 
         {/* 시즌 배지 */}
-        <div className="hidden sm:flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium season-badge">
+        <div className={`hidden sm:flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium season-badge ${seasonInfo.season === 'summer' ? 'summer-badge-anim' : ''}`}>
           <span>{seasonInfo.emoji}</span>
           <span>{seasonInfo.label} 특가</span>
         </div>
@@ -45,10 +50,11 @@ export default async function Header({ seasonInfo }: HeaderProps) {
               </Link>
               <Link
                 href="/mypage"
-                className="hidden sm:block text-sm hover:opacity-80 transition-opacity"
+                className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
                 style={{ color: 'var(--s-text-sub)' }}
               >
-                {nickname}님
+                <Avatar url={profile?.avatar_url} name={nickname} size={28} />
+                <span className="hidden sm:block text-sm">{nickname}님</span>
               </Link>
               <Link
                 href="/sell"

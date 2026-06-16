@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { getSeason } from '@/lib/season'
 import Link from 'next/link'
+import SummerSurf from '@/components/SummerSurf'
+import WaveSound from '@/components/WaveSound'
 
 const CATEGORIES = [
   '전체', '디지털/가전', '의류/잡화', '도서/음반', '생활/주방',
@@ -57,20 +59,24 @@ export default async function HomePage({
         )}
 
         {/* 히어로 */}
-        <div className="rounded-2xl px-5 py-6 mb-5 season-gradient flex items-center justify-between">
-          <div>
-            <div className="inline-flex items-center gap-1.5 season-badge px-2.5 py-1 rounded-full text-xs font-medium mb-2">
-              <span>{seasonInfo.emoji}</span>
-              <span>{seasonInfo.label} 특가</span>
+        <div className={`relative overflow-hidden rounded-2xl px-5 pt-6 mb-5 season-gradient ${seasonInfo.season === 'summer' ? 'pb-28' : 'pb-6'}`}>
+          <div className="relative z-10 flex items-center justify-between">
+            <div>
+              <div className={`inline-flex items-center gap-1.5 season-badge px-2.5 py-1 rounded-full text-xs font-medium mb-2 ${seasonInfo.season === 'summer' ? 'summer-badge-anim' : ''}`}>
+                <span>{seasonInfo.emoji}</span>
+                <span>{seasonInfo.label} 특가</span>
+              </div>
+              <h1 className="text-lg font-bold" style={{ color: 'var(--s-text)' }}>
+                따뜻한 동네 중고거래
+              </h1>
+              <p className="text-sm mt-0.5" style={{ color: 'var(--s-text-sub)' }}>
+                {user ? `${nickname}님 근처의 매물` : '이웃과 가깝게 거래해요'}
+              </p>
+              {seasonInfo.season === 'summer' && <WaveSound />}
             </div>
-            <h1 className="text-lg font-bold" style={{ color: 'var(--s-text)' }}>
-              따뜻한 동네 중고거래
-            </h1>
-            <p className="text-sm mt-0.5" style={{ color: 'var(--s-text-sub)' }}>
-              {user ? `${nickname}님 근처의 매물` : '이웃과 가깝게 거래해요'}
-            </p>
+            <div className="text-5xl">🍠</div>
           </div>
-          <div className="text-5xl">🍠</div>
+          {seasonInfo.season === 'summer' && <SummerSurf />}
         </div>
 
         {/* 검색창 */}

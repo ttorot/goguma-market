@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import ProductCard, { type CardProduct } from '@/components/ProductCard'
+import Avatar from '@/components/Avatar'
 
 export default async function MyPage() {
   const supabase = await createClient()
@@ -13,7 +14,7 @@ export default async function MyPage() {
     { data: myProducts },
     { count: likeCount },
   ] = await Promise.all([
-    supabase.from('profiles').select('nickname, location').eq('id', user.id).single(),
+    supabase.from('profiles').select('nickname, location, bio, avatar_url').eq('id', user.id).single(),
     supabase
       .from('products')
       .select('id, title, price, category, image_url, status, created_at')
@@ -33,21 +34,30 @@ export default async function MyPage() {
 
         {/* 프로필 */}
         <div
-          className="flex items-center gap-4 rounded-2xl px-5 py-5 mb-5"
+          className="rounded-2xl px-5 py-5 mb-5"
           style={{ backgroundColor: 'var(--s-bg-card)', border: '1px solid var(--s-border)' }}
         >
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold"
-            style={{ backgroundColor: 'var(--s-badge-bg)', color: 'var(--s-badge-text)' }}
-          >
-            {nickname[0]}
+          <div className="flex items-center gap-4">
+            <Avatar url={profile?.avatar_url} name={nickname} size={64} />
+            <div className="flex-1 min-w-0">
+              <p className="text-lg font-bold" style={{ color: 'var(--s-text)' }}>{nickname}</p>
+              <p className="text-sm truncate" style={{ color: 'var(--s-text-sub)' }}>
+                {profile?.location ?? '동네 미설정'} · {user.email}
+              </p>
+            </div>
+            <Link
+              href="/mypage/edit"
+              className="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors hover:opacity-80"
+              style={{ borderColor: 'var(--s-border)', color: 'var(--s-text-sub)' }}
+            >
+              프로필 수정
+            </Link>
           </div>
-          <div>
-            <p className="text-lg font-bold" style={{ color: 'var(--s-text)' }}>{nickname}</p>
-            <p className="text-sm" style={{ color: 'var(--s-text-sub)' }}>
-              {profile?.location ?? '동네 미설정'} · {user.email}
+          {profile?.bio && (
+            <p className="text-sm mt-3 whitespace-pre-wrap" style={{ color: 'var(--s-text-sub)' }}>
+              {profile.bio}
             </p>
-          </div>
+          )}
         </div>
 
         {/* 요약 카드 */}

@@ -7,6 +7,7 @@ import CommentForm from './CommentForm'
 import CommentItem from './CommentItem'
 import ImageGallery from '@/components/ImageGallery'
 import LikeButton from '@/components/LikeButton'
+import Avatar from '@/components/Avatar'
 
 export default async function ProductPage({
   params,
@@ -31,7 +32,7 @@ export default async function ProductPage({
     { data: comments },
   ] = await Promise.all([
     supabase.auth.getUser(),
-    supabase.from('profiles').select('nickname').eq('id', product.user_id).single(),
+    supabase.from('profiles').select('nickname, avatar_url').eq('id', product.user_id).single(),
     supabase.from('likes').select('*', { count: 'exact', head: true }).eq('product_id', id),
     supabase
       .from('comments')
@@ -111,12 +112,7 @@ export default async function ProductPage({
         className="flex items-center gap-3 rounded-xl px-4 py-3 mb-5"
         style={{ backgroundColor: 'var(--s-bg-card)', border: '1px solid var(--s-border)' }}
       >
-        <div
-          className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold"
-          style={{ backgroundColor: 'var(--s-badge-bg)', color: 'var(--s-badge-text)' }}
-        >
-          {sellerName[0]}
-        </div>
+        <Avatar url={sellerProfile?.avatar_url} name={sellerName} size={40} />
         <div>
           <p className="font-semibold text-sm" style={{ color: 'var(--s-text)' }}>{sellerName}</p>
           <p className="text-xs" style={{ color: 'var(--s-text-sub)' }}>등록일 {formattedDate}</p>

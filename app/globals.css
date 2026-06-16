@@ -136,3 +136,87 @@ body {
   color: var(--s-text-sub);
   text-decoration: underline;
 }
+
+/* ===== 여름 서핑 애니메이션 🌊🏄 ===== */
+.surf-scene {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 96px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* 파도 한 겹: 같은 그림 2장을 옆으로 이어 붙여 끊김 없이 흐르게 한다 */
+.surf-wave {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  width: 200%;
+}
+.surf-wave svg {
+  width: 50%;
+  height: 96px;
+  display: block;
+}
+.surf-wave-back  { animation: surf-scroll 11s linear infinite; opacity: 0.45; bottom: 10px; }
+.surf-wave-mid   { animation: surf-scroll 7s  linear infinite; opacity: 0.7;  bottom: 4px; }
+.surf-wave-front { animation: surf-scroll 3.2s linear infinite; bottom: 0; }
+
+@keyframes surf-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* 서퍼: 파도를 타듯 위아래로 출렁이며 기울어진다 */
+.surfer {
+  position: absolute;
+  bottom: 42px;
+  left: 20%;
+  font-size: 30px;
+  z-index: 7;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25));
+  animation: surfer-ride 1.7s ease-in-out infinite;
+}
+@keyframes surfer-ride {
+  0%   { transform: translate(0, 0)      rotate(-7deg); }
+  25%  { transform: translate(10px, -12px) rotate(5deg); }
+  50%  { transform: translate(0, 3px)    rotate(-4deg); }
+  75%  { transform: translate(-10px, -9px) rotate(6deg); }
+  100% { transform: translate(0, 0)      rotate(-7deg); }
+}
+
+/* 물보라(거품): 파도 마루에서 터지는 느낌 */
+.surf-foam {
+  position: absolute;
+  border-radius: 9999px;
+  background: #ffffff;
+  filter: blur(1px);
+  z-index: 6;
+  animation: surf-splash 1.8s ease-in-out infinite;
+}
+@keyframes surf-splash {
+  0%   { transform: scale(0.3) translateY(0); opacity: 0; }
+  40%  { opacity: 0.95; }
+  70%  { transform: scale(1.3) translateY(-6px); opacity: 0.4; }
+  100% { transform: scale(1.5) translateY(-10px); opacity: 0; }
+}
+
+/* "여름 특가" 배지가 톡톡 빛나도록 */
+.summer-badge-anim {
+  animation: summer-badge-pulse 2.2s ease-in-out infinite;
+}
+@keyframes summer-badge-pulse {
+  0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.45); }
+  50%      { transform: scale(1.06); box-shadow: 0 0 14px 3px rgba(14, 165, 233, 0.55); }
+}
+
+/* 움직임을 줄이는 설정(접근성)을 쓰는 사용자에게는 애니메이션을 멈춘다 */
+@media (prefers-reduced-motion: reduce) {
+  .surf-wave, .surfer, .surf-foam, .summer-badge-anim {
+    animation: none;
+  }
+}
