@@ -3,6 +3,10 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { deleteProduct, markAsSold } from '@/app/actions/product'
 import DeleteButton from './DeleteButton'
+import CommentForm from './CommentForm'
+import CommentItem from './CommentItem'
+import ImageGallery from '@/components/ImageGallery'
+import LikeButton from '@/components/LikeButton'
 
 export default async function ProductPage({
   params,
@@ -20,14 +24,52 @@ export default async function ProductPage({
 
   if (!product) notFound()
 
-  const [{ data: { user } }, { data: sellerProfile }] = await Promise.all([
+  const [
+    { data: { user } },
+    { data: sellerProfile },
+    { count: likeCount },
+    { data: comments },
+  ] = await Promise.all([
     supabase.auth.getUser(),
     supabase.from('profiles').select('nickname').eq('id', product.user_id).single(),
+    supabase.from('likes').select('*', { count: 'exact', head: true }).eq('product_id', id),
+    supabase
+      .from('comments')
+      .select('id, content, created_at, user_id')
+      .eq('product_id', id)
+      .order('created_at', { ascending: true }),
   ])
 
-  const isOwner = user?.id === product.user_id
+  // 내가 이 상품에 좋아요를 눌렀는지
+  let likedByMe = false
+  if (user) {
+    const { data: myLike } = await supabase
+      .from('likes')
+      .select('product_id')
+      .eq('product_id', id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+    likedByMe = !!myLike
+  }
 
+  // 댓글 작성자 닉네임 모으기
+  const commentList = comments ?? []
+  const commenterIds = [...new Set(commentList.map(c => c.user_id))]
+  let nicknameMap: Record<string, string> = {}
+  if (commenterIds.length > 0) {
+    const { data: commenterProfiles } = await supabase
+      .from('profiles')
+      .select('id, nickname')
+      .in('id', commenterIds)
+    nicknameMap = Object.fromEntries(
+      (commenterProfiles ?? []).map(p => [p.id, p.nickname ?? '이웃']),
+    )
+  }
+
+  const isOwner = user?.id === product.user_id
   const sellerName = sellerProfile?.nickname ?? '이웃'
+
+  const images: string[] = product.image_urls ?? (product.image_url ? [product.image_url] : [])
 
   const formattedPrice = product.price === 0
     ? '무료 나눔'
@@ -50,19 +92,14 @@ export default async function ProductPage({
       </Link>
 
       {/* 상품 이미지 */}
-      <div
-        className="w-full rounded-2xl overflow-hidden mb-5"
-        style={{ backgroundColor: 'var(--s-bg-card)', border: '1px solid var(--s-border)', minHeight: '200px' }}
-      >
-        {product.image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={product.image_url}
-            alt={product.title}
-            className="w-full object-cover max-h-80"
-          />
+      <div className="mb-5">
+        {images.length > 0 ? (
+          <ImageGallery images={images} alt={product.title} />
         ) : (
-          <div className="flex flex-col items-center justify-center h-48" style={{ color: 'var(--s-text-sub)' }}>
+          <div
+            className="w-full rounded-2xl overflow-hidden flex flex-col items-center justify-center h-48"
+            style={{ backgroundColor: 'var(--s-bg-card)', border: '1px solid var(--s-border)', color: 'var(--s-text-sub)' }}
+          >
             <div className="text-5xl mb-2">🍠</div>
             <p className="text-sm">사진 없음</p>
           </div>
@@ -88,7 +125,7 @@ export default async function ProductPage({
 
       {/* 상품 정보 */}
       <div
-        className="rounded-2xl p-5 mb-5"
+        className="rounded-2xl p-5 mb-4"
         style={{ backgroundColor: 'var(--s-bg-card)', border: '1px solid var(--s-border)' }}
       >
         {/* 상태 배지 */}
@@ -125,6 +162,23 @@ export default async function ProductPage({
             {product.description}
           </p>
         )}
+      </div>
+
+      {/* 좋아요 / 댓글 수 */}
+      <div className="flex items-center gap-3 mb-5">
+        <LikeButton
+          productId={product.id}
+          initialLiked={likedByMe}
+          initialCount={likeCount ?? 0}
+          isLoggedIn={!!user}
+        />
+        <a
+          href="#comments"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border text-sm font-medium transition-colors"
+          style={{ borderColor: 'var(--s-border)', backgroundColor: 'var(--s-bg-card)', color: 'var(--s-text-sub)' }}
+        >
+          💬 댓글 {commentList.length}
+        </a>
       </div>
 
       {/* 버튼 영역 */}
@@ -172,6 +226,42 @@ export default async function ProductPage({
           )}
         </div>
       )}
+
+      {/* 댓글 영역 */}
+      <section id="comments" className="mt-8 scroll-mt-20">
+        <h2 className="text-base font-bold mb-4" style={{ color: 'var(--s-text)' }}>
+          댓글 {commentList.length}
+        </h2>
+
+        {user ? (
+          <CommentForm productId={product.id} />
+        ) : (
+          <div
+            className="rounded-xl px-4 py-3 mb-5 text-sm"
+            style={{ backgroundColor: 'var(--s-bg-card)', border: '1px solid var(--s-border)', color: 'var(--s-text-sub)' }}
+          >
+            댓글을 쓰려면 <Link href="/login" className="link-primary font-medium">로그인</Link>이 필요해요.
+          </div>
+        )}
+
+        {commentList.length === 0 ? (
+          <p className="text-sm text-center py-6" style={{ color: 'var(--s-text-sub)' }}>
+            아직 댓글이 없어요. 첫 댓글을 남겨보세요!
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {commentList.map(c => (
+              <CommentItem
+                key={c.id}
+                comment={{ id: c.id, content: c.content, created_at: c.created_at }}
+                authorName={nicknameMap[c.user_id] ?? '이웃'}
+                isOwner={user?.id === c.user_id}
+                productId={product.id}
+              />
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   )
 }

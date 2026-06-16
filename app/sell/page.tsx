@@ -1,7 +1,6 @@
 'use client'
 
-import { useActionState, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useActionState, useRef, useState } from 'react'
 import Link from 'next/link'
 import { createProduct } from '@/app/actions/product'
 
@@ -10,26 +9,43 @@ const CATEGORIES = [
   '가구/인테리어', '스포츠/레저', '유아동', '식품', '기타',
 ]
 
+const MAX_IMAGES = 5
+
+type Picked = { file: File; url: string }
+
 export default function SellPage() {
   const [state, formAction, isPending] = useActionState(createProduct, undefined)
-  const [preview, setPreview] = useState<string | null>(null)
+  const [picked, setPicked] = useState<Picked[]>([])
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const url = URL.createObjectURL(file)
-    setPreview(url)
+  // 화면에서 고른 파일 목록을 실제 input(file)에 다시 채워 넣어, 폼 제출 시 그대로 전송되게 한다.
+  function syncInput(next: Picked[]) {
+    const dt = new DataTransfer()
+    next.forEach(p => dt.items.add(p.file))
+    if (inputRef.current) inputRef.current.files = dt.files
+  }
+
+  function handleAdd(e: React.ChangeEvent<HTMLInputElement>) {
+    const newFiles = Array.from(e.target.files ?? [])
+    if (newFiles.length === 0) return
+    const added = newFiles.map(file => ({ file, url: URL.createObjectURL(file) }))
+    const next = [...picked, ...added].slice(0, MAX_IMAGES)
+    setPicked(next)
+    syncInput(next)
+  }
+
+  function removeAt(i: number) {
+    URL.revokeObjectURL(picked[i].url)
+    const next = picked.filter((_, idx) => idx !== i)
+    setPicked(next)
+    syncInput(next)
   }
 
   return (
     <div className="max-w-lg mx-auto px-4 py-10" style={{ backgroundColor: 'var(--s-bg)' }}>
       {/* 헤더 */}
       <div className="flex items-center gap-3 mb-8">
-        <Link
-          href="/"
-          className="text-2xl hover:opacity-70 transition-opacity"
-          aria-label="뒤로가기"
-        >
+        <Link href="/" className="text-2xl hover:opacity-70 transition-opacity" aria-label="뒤로가기">
           ←
         </Link>
         <h1 className="text-xl font-bold" style={{ color: 'var(--s-text)' }}>
@@ -41,58 +57,68 @@ export default function SellPage() {
         {/* 이미지 업로드 */}
         <div>
           <label className="block text-sm font-medium mb-2" style={{ color: 'var(--s-text)' }}>
-            상품 사진
+            상품 사진 <span style={{ color: 'var(--s-text-sub)' }}>({picked.length}/{MAX_IMAGES})</span>
           </label>
-          <label
-            htmlFor="image-input"
-            className="cursor-pointer flex flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-colors overflow-hidden"
-            style={{
-              borderColor: preview ? 'transparent' : 'var(--s-border)',
-              backgroundColor: preview ? 'transparent' : 'var(--s-bg-card)',
-              height: preview ? 'auto' : '160px',
-            }}
-          >
-            {preview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={preview}
-                alt="상품 미리보기"
-                className="w-full rounded-2xl object-cover max-h-72"
-              />
-            ) : (
+
+          {picked.length === 0 ? (
+            <label
+              htmlFor="image-input"
+              className="cursor-pointer flex flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-colors"
+              style={{ borderColor: 'var(--s-border)', backgroundColor: 'var(--s-bg-card)', height: '160px' }}
+            >
               <div className="text-center p-6">
                 <div className="text-4xl mb-2">📷</div>
-                <p className="text-sm" style={{ color: 'var(--s-text-sub)' }}>
-                  사진을 추가해주세요
-                </p>
+                <p className="text-sm" style={{ color: 'var(--s-text-sub)' }}>사진을 추가해주세요</p>
                 <p className="text-xs mt-1" style={{ color: 'var(--s-text-sub)', opacity: 0.7 }}>
-                  JPG, PNG, WebP · 최대 5MB
+                  JPG, PNG, WebP · 최대 {MAX_IMAGES}장 · 한 장당 5MB
                 </p>
               </div>
-            )}
-          </label>
+            </label>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {picked.map((p, i) => (
+                <div key={p.url} className="relative aspect-square rounded-xl overflow-hidden" style={{ border: '1px solid var(--s-border)' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.url} alt={`사진 ${i + 1}`} className="w-full h-full object-cover" />
+                  {i === 0 && (
+                    <span className="absolute bottom-1 left-1 text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--goguma)', color: 'white' }}>
+                      대표
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeAt(i)}
+                    className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.6)', color: 'white' }}
+                    aria-label={`사진 ${i + 1} 삭제`}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              {picked.length < MAX_IMAGES && (
+                <label
+                  htmlFor="image-input"
+                  className="cursor-pointer aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center"
+                  style={{ borderColor: 'var(--s-border)', backgroundColor: 'var(--s-bg-card)', color: 'var(--s-text-sub)' }}
+                >
+                  <span className="text-2xl">＋</span>
+                  <span className="text-xs mt-1">추가</span>
+                </label>
+              )}
+            </div>
+          )}
+
           <input
+            ref={inputRef}
             id="image-input"
             name="image"
             type="file"
+            multiple
             accept="image/jpeg,image/png,image/webp,image/gif"
             className="hidden"
-            onChange={handleImageChange}
+            onChange={handleAdd}
           />
-          {preview && (
-            <button
-              type="button"
-              className="mt-2 text-xs"
-              style={{ color: 'var(--s-text-sub)' }}
-              onClick={() => {
-                setPreview(null)
-                const input = document.getElementById('image-input') as HTMLInputElement
-                if (input) input.value = ''
-              }}
-            >
-              사진 삭제
-            </button>
-          )}
         </div>
 
         {/* 상품명 */}

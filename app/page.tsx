@@ -10,7 +10,7 @@ const CATEGORIES = [
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ welcome?: string; listed?: string; category?: string }>
+  searchParams: Promise<{ welcome?: string; listed?: string; category?: string; q?: string }>
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -19,19 +19,23 @@ export default async function HomePage({
   const isWelcome = params.welcome === '1'
   const isListed = params.listed === '1'
   const selectedCategory = params.category ?? '전체'
+  const keyword = params.q?.trim() ?? ''
 
   const nickname = user?.user_metadata?.nickname ?? user?.email?.split('@')[0]
 
-  // 상품 목록 조회
+  // 상품 목록 조회 (좋아요/댓글 수 포함)
   let query = supabase
     .from('products')
-    .select('id, title, price, category, image_url, status, created_at')
+    .select('id, title, price, category, image_url, status, created_at, likes(count), comments(count)')
     .eq('status', 'active')
     .order('created_at', { ascending: false })
     .limit(40)
 
   if (selectedCategory !== '전체') {
     query = query.eq('category', selectedCategory)
+  }
+  if (keyword) {
+    query = query.or(`title.ilike.%${keyword}%,description.ilike.%${keyword}%`)
   }
 
   const { data: products } = await query
@@ -53,7 +57,7 @@ export default async function HomePage({
         )}
 
         {/* 히어로 */}
-        <div className="rounded-2xl px-5 py-6 mb-6 season-gradient flex items-center justify-between">
+        <div className="rounded-2xl px-5 py-6 mb-5 season-gradient flex items-center justify-between">
           <div>
             <div className="inline-flex items-center gap-1.5 season-badge px-2.5 py-1 rounded-full text-xs font-medium mb-2">
               <span>{seasonInfo.emoji}</span>
@@ -69,6 +73,21 @@ export default async function HomePage({
           <div className="text-5xl">🍠</div>
         </div>
 
+        {/* 검색창 */}
+        <form action="/" method="get" className="relative mb-5">
+          <input
+            type="text"
+            name="q"
+            defaultValue={keyword}
+            placeholder="어떤 물건을 찾으세요?"
+            className="input-field w-full pl-11 pr-4 py-3 rounded-xl border text-sm transition-all"
+            style={{ borderColor: 'var(--s-border)', backgroundColor: 'var(--s-bg-card)', color: 'var(--s-text)' }}
+          />
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base" style={{ color: 'var(--s-text-sub)' }}>
+            🔍
+          </span>
+        </form>
+
         {/* 카테고리 필터 */}
         <div className="flex gap-2 overflow-x-auto pb-2 mb-5 scrollbar-hide">
           {CATEGORIES.map(cat => (
@@ -76,7 +95,7 @@ export default async function HomePage({
               key={cat}
               href={cat === '전체' ? '/' : `/?category=${encodeURIComponent(cat)}`}
               className="shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
-              style={selectedCategory === cat ? {
+              style={selectedCategory === cat && !keyword ? {
                 backgroundColor: 'var(--s-primary)',
                 color: 'white',
               } : {
@@ -90,6 +109,15 @@ export default async function HomePage({
           ))}
         </div>
 
+        {/* 검색 결과 안내 */}
+        {keyword && (
+          <p className="text-sm mb-4" style={{ color: 'var(--s-text-sub)' }}>
+            <strong style={{ color: 'var(--s-text)' }}>&lsquo;{keyword}&rsquo;</strong> 검색 결과 {products?.length ?? 0}건
+            {' · '}
+            <Link href="/" className="link-primary">전체 보기</Link>
+          </p>
+        )}
+
         {/* 상품 목록 */}
         {!products || products.length === 0 ? (
           <div
@@ -98,12 +126,12 @@ export default async function HomePage({
           >
             <div className="text-5xl mb-4">🍠</div>
             <p className="font-semibold mb-1" style={{ color: 'var(--s-text)' }}>
-              아직 등록된 상품이 없어요
+              {keyword ? '검색 결과가 없어요' : '아직 등록된 상품이 없어요'}
             </p>
             <p className="text-sm mb-5" style={{ color: 'var(--s-text-sub)' }}>
-              첫 번째 판매자가 되어보세요!
+              {keyword ? '다른 검색어로 찾아보세요!' : '첫 번째 판매자가 되어보세요!'}
             </p>
-            {user ? (
+            {!keyword && (user ? (
               <Link
                 href="/sell"
                 className="btn-primary inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-sm"
@@ -117,51 +145,59 @@ export default async function HomePage({
               >
                 시작하기
               </Link>
-            )}
+            ))}
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {products.map(product => (
-              <Link
-                key={product.id}
-                href={`/products/${product.id}`}
-                className="group rounded-2xl overflow-hidden transition-transform hover:-translate-y-0.5"
-                style={{ backgroundColor: 'var(--s-bg-card)', border: '1px solid var(--s-border)', boxShadow: '0 2px 8px var(--s-shadow)' }}
-              >
-                {/* 상품 이미지 */}
-                <div
-                  className="w-full aspect-square flex items-center justify-center overflow-hidden"
-                  style={{ backgroundColor: 'var(--s-bg)' }}
+            {products.map(product => {
+              const likeCount = product.likes?.[0]?.count ?? 0
+              const commentCount = product.comments?.[0]?.count ?? 0
+              return (
+                <Link
+                  key={product.id}
+                  href={`/products/${product.id}`}
+                  className="group rounded-2xl overflow-hidden transition-transform hover:-translate-y-0.5"
+                  style={{ backgroundColor: 'var(--s-bg-card)', border: '1px solid var(--s-border)', boxShadow: '0 2px 8px var(--s-shadow)' }}
                 >
-                  {product.image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={product.image_url}
-                      alt={product.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <span className="text-4xl">🍠</span>
-                  )}
-                </div>
-
-                {/* 상품 정보 */}
-                <div className="p-3">
-                  <p
-                    className="text-sm font-medium leading-tight mb-1 line-clamp-2"
-                    style={{ color: 'var(--s-text)' }}
+                  {/* 상품 이미지 */}
+                  <div
+                    className="w-full aspect-square flex items-center justify-center overflow-hidden"
+                    style={{ backgroundColor: 'var(--s-bg)' }}
                   >
-                    {product.title}
-                  </p>
-                  <p className="text-sm font-bold" style={{ color: 'var(--goguma)' }}>
-                    {product.price === 0 ? '무료 나눔' : `${product.price.toLocaleString('ko-KR')}원`}
-                  </p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--s-text-sub)' }}>
-                    {product.category}
-                  </p>
-                </div>
-              </Link>
-            ))}
+                    {product.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={product.image_url}
+                        alt={product.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <span className="text-4xl">🍠</span>
+                    )}
+                  </div>
+
+                  {/* 상품 정보 */}
+                  <div className="p-3">
+                    <p
+                      className="text-sm font-medium leading-tight mb-1 line-clamp-2"
+                      style={{ color: 'var(--s-text)' }}
+                    >
+                      {product.title}
+                    </p>
+                    <p className="text-sm font-bold" style={{ color: 'var(--goguma)' }}>
+                      {product.price === 0 ? '무료 나눔' : `${product.price.toLocaleString('ko-KR')}원`}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1.5 text-xs" style={{ color: 'var(--s-text-sub)' }}>
+                      <span>{product.category}</span>
+                      <span className="ml-auto flex items-center gap-2">
+                        <span>❤️ {likeCount}</span>
+                        <span>💬 {commentCount}</span>
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
           </div>
         )}
       </div>

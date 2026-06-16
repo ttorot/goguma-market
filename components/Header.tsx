@@ -34,9 +34,22 @@ export default async function Header({ seasonInfo }: HeaderProps) {
         <nav className="flex items-center gap-2">
           {user ? (
             <>
-              <span className="hidden sm:block text-sm" style={{ color: 'var(--s-text-sub)' }}>
+              <Link
+                href="/likes"
+                className="px-2.5 py-1.5 rounded-full text-sm transition-colors hover:opacity-80"
+                style={{ color: 'var(--s-text-sub)' }}
+                aria-label="좋아요한 상품"
+                title="좋아요한 상품"
+              >
+                ❤️
+              </Link>
+              <Link
+                href="/mypage"
+                className="hidden sm:block text-sm hover:opacity-80 transition-opacity"
+                style={{ color: 'var(--s-text-sub)' }}
+              >
                 {nickname}님
-              </span>
+              </Link>
               <Link
                 href="/sell"
                 className="px-4 py-1.5 rounded-full text-sm font-medium btn-primary"

@@ -30,7 +30,7 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // 로그인 필요 경로 보호
-  const protectedPaths = ['/profile', '/sell', '/messages']
+  const protectedPaths = ['/profile', '/sell', '/messages', '/mypage', '/likes']
   const isProtected = protectedPaths.some(p => pathname.startsWith(p))
 
   if (isProtected && !user) {
