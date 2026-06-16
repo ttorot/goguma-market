@@ -129,19 +129,28 @@ export default async function ProductPage({
 
       {/* 버튼 영역 */}
       {isOwner ? (
-        <div className="flex gap-3">
-          {product.status === 'active' && (
-            <form action={markAsSold.bind(null, product.id)} className="flex-1">
-              <button
-                type="submit"
-                className="w-full py-3 rounded-xl text-sm font-semibold border transition-colors hover:opacity-80"
-                style={{ borderColor: 'var(--s-border)', color: 'var(--s-text-sub)' }}
-              >
-                거래완료 처리
-              </button>
-            </form>
-          )}
-          <form action={deleteProduct.bind(null, product.id)} className="flex-1">
+        <div className="space-y-3">
+          <div className="flex gap-3">
+            {product.status === 'active' && (
+              <form action={markAsSold.bind(null, product.id)} className="flex-1">
+                <button
+                  type="submit"
+                  className="w-full py-3 rounded-xl text-sm font-semibold border transition-colors hover:opacity-80"
+                  style={{ borderColor: 'var(--s-border)', color: 'var(--s-text-sub)' }}
+                >
+                  거래완료 처리
+                </button>
+              </form>
+            )}
+            <Link
+              href={`/products/${product.id}/edit`}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold border text-center transition-colors hover:opacity-80"
+              style={{ borderColor: 'var(--s-border)', color: 'var(--s-text-sub)' }}
+            >
+              수정하기
+            </Link>
+          </div>
+          <form action={deleteProduct.bind(null, product.id)}>
             <DeleteButton />
           </form>
         </div>
